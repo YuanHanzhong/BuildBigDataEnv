@@ -27,8 +27,6 @@ class AliyunRunInstancesExample(object):
         # 获取用户输入的小时数
         self.user_hours = int(input("请输入开通几个小时（输入数字后按2次回车）："))
 
-
-
         # 安全组
         self.security_group_ids = ['sg-8vbap91nk99v1ypw280a']
         # 是否只预检此次请求。true：发送检查请求，不会创建实例，也不会产生费用；false：发送正常请求，通过检查后直接创建实例，并直接产生费用
