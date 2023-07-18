@@ -3,12 +3,10 @@
 import json
 import time
 import traceback
+from aliyunsdkecs.request.v20140526.RunInstancesRequest import RunInstancesRequest
 
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerException
-from aliyunsdkecs.request.v20140526.RunInstancesRequest import RunInstancesRequest
-from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import DescribeInstancesRequest
-
 
 RUNNING_STATUS = 'Running'
 CHECK_INTERVAL = 3
@@ -26,11 +24,11 @@ class AliyunRunInstancesExample(object):
         # 实例所属的地域ID
         self.region_id = 'cn-zhangjiakou'
         # 实例的资源规格
-        self.instance_type = 'ecs.g5.large'
+        self.instance_type = 'ecs.se1ne.large'
         # 实例的计费方式
         self.instance_charge_type = 'PostPaid'
         # 镜像ID
-        self.image_id = 'm-8vb5b1bouhav6de5gqtb'
+        self.image_id = 'm-8vbccvbehw3dwynsoos8'
         # 指定新创建实例所属于的安全组ID
         self.security_group_id = 'sg-8vbap91nk99v1ypw280a'
         # 购买资源的时长
@@ -42,13 +40,17 @@ class AliyunRunInstancesExample(object):
         # 网络计费类型
         self.internet_charge_type = 'PayByTraffic'
         # 虚拟交换机ID
-        self.vswitch_id = 'vsw-8vbi8mnk1ob5lysvx37zh'
+        self.vswitch_id = 'vsw-8vbi4ohmz5c1nsoasmnkl'
         # 实例名称
-        self.instance_name = 'launch-advisor-20230718'
+        self.instance_name = 'hadoop104'
+        # 是否使用镜像预设的密码
+        self.password_inherit = True
         # 指定创建ECS实例的数量
         self.amount = 1
         # 公网出带宽最大值
-        self.internet_max_bandwidth_out = 5
+        self.internet_max_bandwidth_out = 100
+        # 云服务器的主机名
+        self.host_name = 'hadoop104'
         # 是否为I/O优化实例
         self.io_optimized = 'optimized'
         # 后付费实例的抢占策略
@@ -56,8 +58,8 @@ class AliyunRunInstancesExample(object):
         # 系统盘大小
         self.system_disk_size = '40'
         # 系统盘的磁盘种类
-        self.system_disk_category = 'cloud_ssd'
-        
+        self.system_disk_category = 'cloud_efficiency'
+
         self.client = AcsClient(self.access_id, self.access_secret, self.region_id)
 
     def run(self):
@@ -82,9 +84,9 @@ class AliyunRunInstancesExample(object):
         :return:instance_ids 需要检查的实例ID
         """
         request = RunInstancesRequest()
-       
+
         request.set_DryRun(self.dry_run)
-        
+
         request.set_InstanceType(self.instance_type)
         request.set_InstanceChargeType(self.instance_charge_type)
         request.set_ImageId(self.image_id)
@@ -95,13 +97,15 @@ class AliyunRunInstancesExample(object):
         request.set_InternetChargeType(self.internet_charge_type)
         request.set_VSwitchId(self.vswitch_id)
         request.set_InstanceName(self.instance_name)
+        request.set_PasswordInherit(self.password_inherit)
         request.set_Amount(self.amount)
         request.set_InternetMaxBandwidthOut(self.internet_max_bandwidth_out)
+        request.set_HostName(self.host_name)
         request.set_IoOptimized(self.io_optimized)
         request.set_SpotStrategy(self.spot_strategy)
         request.set_SystemDiskSize(self.system_disk_size)
         request.set_SystemDiskCategory(self.system_disk_category)
-         
+
         body = self.client.do_action_with_exception(request)
         data = json.loads(body)
         instance_ids = data['InstanceIdSets']['InstanceIdSet']

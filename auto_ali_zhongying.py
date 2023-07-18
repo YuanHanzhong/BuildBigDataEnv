@@ -1,4 +1,5 @@
 import json
+import os
 import time
 import datetime
 from dateutil import tz
@@ -22,29 +23,40 @@ import re
 from aliyunsdkecs.request.v20140526 import DescribeInstancesRequest
 from aliyunsdkecs.request.v20140526 import DescribeInstancesRequest
 
-# 配置实例参数
-instance_type = "ecs.se1.large"
+
+# 实例的资源规格
+instance_type = 'ecs.u1-c1m8.large'
+# 实例的计费方式
+instance_charge_type = 'PostPaid'
+# 是否为I/O优化实例
+io_optimized = 'optimized'
+# 后付费实例的抢占策略
+spot_strategy = 'SpotAsPriceGo'
+# 系统盘大小
+system_disk_size = '40'
+# 系统盘的磁盘种类
+system_disk_category = 'cloud_essd'
+# 性能级别
+system_disk_performance_level = 'PL0'
 
 # 要加入的安全组列表
-security_group_ids = ["sg-8vbdminvtx8jh306o18u", "sg-8vbap91nk99v1ypw280a"]
+security_group_ids = ["sg-8vbap91nk99v1ypw280a"]
 
-# security_group_id_all_ip = "sg-8vbdminvtx8jh306o18u"
-
-# security_group_id_all_port = "sg-8vbap91nk99v1ypw280a"
-
-# sg-8vbdminvtx8jh306o18u 对所有 ip 开放10000 22 端口
-# sg-8vbap91nk99v1ypw280a 对特定ip开放所有端口
 
 vswitch_id = "vsw-8vbi4ohmz5c1nsoasmnkl"
 image_ids = [
-    "m-8vben2f0ysfmxp8p86o6",  # hadoop104
-    "m-8vbgy1yye4xwlqrj1lm4",  # hadoop103
-    "m-8vbccvbehw3dwynsoos8"  # hadoop102
+    # 注意这里镜像对应的顺序
+
+
+    "m-8vb7wngs19qmgbakig6r",  # hadoop102
+    "m-8vbdbtsinp5isj43k0bp",  # hadoop103
+    "m-8vb5b1bouhav6de5gqtb"  # hadoop104
+
 ]
 
 # 配置访问密钥和密钥ID
-ACCESS_KEY_ID = "LTAI5t77RHozE1RjuHt3Duxd"
-ACCESS_SECRET = "m5lCvhHQTU9epnrRdDiUCcsDMSSZlg"
+ACCESS_KEY_ID = os.environ.get('ACCESS_KEY_ID')
+ACCESS_SECRET = os.environ.get('ACCESS_SECRET')
 
 # 设置地区
 region_id = "cn-zhangjiakou"
@@ -54,16 +66,16 @@ client = AcsClient(ACCESS_KEY_ID, ACCESS_SECRET, region_id)
 
 # 镜像和实例名称对应关系
 image_to_instance_name_map = {
-    image_ids[2]: "hadoop102",
+    image_ids[0]: "hadoop102",
     image_ids[1]: "hadoop103",
-    image_ids[0]: "hadoop104"
+    image_ids[2]: "hadoop104"
 }
 
 # 内网地址和实例对应关系
 image_to_private_ip_map = {
-    image_ids[2]: "172.29.16.92",
-    image_ids[1]: "172.29.16.93",
-    image_ids[0]: "172.29.16.94"
+    image_ids[0]: "172.29.16.12",
+    image_ids[1]: "172.29.16.13",
+    image_ids[2]: "172.29.16.14"
 }
 
 # 实例列表
@@ -108,6 +120,19 @@ def create_instance(image_id, instance_name):
     request.set_VSwitchId(vswitch_id)
     request.set_InstanceName(instance_name)
     request.set_PrivateIpAddress(image_to_private_ip_map[image_id])
+    request.set_InternetMaxBandwidthOut(100)  # set to an appropriate value
+
+
+    # 设置云盘类型
+    request.set_SystemDiskCategory("cloud_ssd")
+    request.set_SystemDiskSize(40)
+
+    # 付费模式: 抢占式实例
+    request.set_InstanceChargeType("PostPaid")
+    # 单台实例规格上限价: 使用自动出价
+    request.set_SpotStrategy("SpotWithPriceLimit")
+
+
 
     try:
         response = client.do_action_with_exception(request)
@@ -176,11 +201,20 @@ if __name__ == "__main__":
         print("Waiting for instance {} to be running...".format(instance_id))
         wait_instance_running(instance_id)
 
-    # 分配公网 IP 和添加安全组
-    for instance_id in created_instance_ids:
-        print("Allocating public IP for instance", instance_id)
-        public_ip = allocate_public_ip(instance_id)
-        print("Public IP:", public_ip)
+
+    # 分配公网 IP
+    def allocate_public_ip(instance_id):
+        request = AllocatePublicIpAddressRequest.AllocatePublicIpAddressRequest()
+        request.set_accept_format("json")
+        request.set_InstanceId(instance_id)
+
+        try:
+            response = client.do_action_with_exception(request)
+            response_dict = json.loads(response)
+            return response_dict["IpAddress"]
+        except ServerException as e:
+            print("Allocate public IP failed: ", e.get_error_msg())
+
 
         # 添加安全组
         for security_group_id in security_group_ids[1:]:
