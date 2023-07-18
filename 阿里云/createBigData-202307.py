@@ -15,9 +15,9 @@ CHECK_INTERVAL = 3
 CHECK_TIMEOUT = 180
 
 image_ids = [
-    "m-8vb8cade9q5f58ye36yz",  # hadoop102
-    "m-8vbgyl71vy3cizulpu30",  # hadoop103
-    "m-8vbesrqmk0bt65xcyl28"  # hadoop104
+    "m-8vb20puln8nkhc9jpaqa",  # hadoop102
+    "m-8vb521z1afn92hbsqomn",  # hadoop103
+    "m-8vbj1hp1slkrfnyhtx9a"  # hadoop104
 ]
 
 class AliyunRunInstancesExample(object):

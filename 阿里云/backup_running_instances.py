@@ -12,13 +12,11 @@ current_date = datetime.now().strftime("%Y%m%d%H:%M")
 ACCESS_KEY_ID = os.environ.get('ACCESS_KEY_ID')
 ACCESS_SECRET = os.environ.get('ACCESS_SECRET')
 
-
 # 设置地区
 region_id = "cn-zhangjiakou"
 
 # 初始化客户端
 client = AcsClient(ACCESS_KEY_ID, ACCESS_SECRET, region_id)
-
 
 def get_running_instances():
     request = DescribeInstancesRequest.DescribeInstancesRequest()
@@ -26,7 +24,6 @@ def get_running_instances():
     response = client.do_action_with_exception(request)
     response_json = json.loads(response.decode("utf-8"))
     return response_json["Instances"]["Instance"]
-
 
 def create_image(instance_id, instance_name):
     request = CreateImageRequest.CreateImageRequest()
@@ -38,35 +35,44 @@ def create_image(instance_id, instance_name):
     response_json = json.loads(response.decode("utf-8"))
     return response_json["ImageId"]
 
-
 if __name__ == "__main__":
     running_instances = get_running_instances()
 
-    print("镜像创建完成...")
-    print()
-    print("按住 option+shift 块选, 复制粘贴")
+    # List to hold tuples of instance name and image ID
+    images = []
+
     for instance in running_instances:
         instance_id = instance["InstanceId"]
         instance_name = instance["InstanceName"]
 
-        try:
-            image_id = create_image(instance_id, instance_name)
-            # image_ids = [
-            #     "m-8vben2f0ysfmxp8p86o6",  # hadoop104
-            #     "m-8vbgy1yye4xwlqrj1lm4",  # hadoop103
-            #     "m-8vbccvbehw3dwynsoos8"  # hadoop102
-            # ]
-            # print(f"\"{image_id}\"  # {instance_name}")
-            # print(f"{image_id}  # {instance_name}")
-            print(f"{image_id}")
+        # Only backup instances where the hostname starts with 'hadoop'
+        if instance_name.startswith('hadoop'):
+            try:
+                image_id = create_image(instance_id, instance_name)
+                # Add the instance name and image ID as a tuple to the list
+                images.append((instance_name, image_id))
+
+            except ServerException as e:
+                print(
+                    f"为实例 {instance_name} 创建镜像失败，错误信息: {e.error_code} - {e.message}"
+                )
+            except ClientException as e:
+                print(
+                    f"为实例 {instance_name} 创建镜像失败，错误信息: {e.error_code} - {e.message}"
+                )
+
+    # Sort the list of tuples based on the instance name (first item in each tuple)
+    images.sort()
+    print()
+    print()
 
 
+    print("image_ids = [")
+    for i, image in enumerate(images):
+        if i != len(images) - 1:
+            print(f"    \"{image[1]}\",  # {image[0]}")
+        else:
+            print(f"    \"{image[1]}\"  # {image[0]}")
+    print("]")
 
-        except ServerException as e:
-            print(
-                f"为实例 {instance_name} 创建镜像失败，错误信息: {e.error_code} - {e.message}"
-            )
-        except ClientException as e:
-            print(
-                f"为实例 {instance_name} 创建镜像失败，错误信息: {e.error_code} - {e.message}"
-            )
+
