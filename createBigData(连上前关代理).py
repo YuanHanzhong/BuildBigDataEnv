@@ -15,9 +15,9 @@ CHECK_INTERVAL = 3
 CHECK_TIMEOUT = 180
 
 image_ids = [
-    "m-8vb67ilh2blradmb1nnc",  # hadoop102
-    "m-8vb9l7km92go9lafxs76",  # hadoop103
-    "m-8vb2z29c5fk3niatb0px"  # hadoop104
+    "m-8vb7chwlnshzet1lrj8k",  # hadoop102
+    "m-8vbbml2roivu0tk2bvba",  # hadoop103
+    "m-8vbhcsz3ukur9frbvd6s"  # hadoop104
 ]
 
 class AliyunRunInstancesExample(object):
@@ -45,7 +45,7 @@ class AliyunRunInstancesExample(object):
         # 实例所属的地域ID
         self.region_id = 'cn-zhangjiakou'
         # 实例的资源规格
-        self.instance_type = 'ecs.u1-c1m8.large'
+        self.instance_type = 'ecs.se1ne.large'
         # 实例的计费方式
         self.instance_charge_type = 'PostPaid'
         # 指定新创建实例所属于的安全组ID
@@ -75,9 +75,16 @@ class AliyunRunInstancesExample(object):
         # 系统盘大小
         self.system_disk_size = '40'
         # 系统盘的磁盘种类
-        self.system_disk_category = 'cloud_essd'
-        # 性能级别
-        self.system_disk_performance_level = 'PL0'
+        # cloud_efficiency      高效云盘
+        # cloud_essd            弹性 ssd
+        # cloud_ssd             普通 ssd
+        self.system_disk_category = 'cloud_ssd'
+
+        # 性能级别,
+        # 1. 使用 ESSD 的时候才可以选择,
+        # 2. 并还需要把下面相关设置打开
+        # 3. 选择这个的时候, 实例常常被自动释放, 改用普通 ssd
+        # self.system_disk_performance_level = 'PL0'
 
         self.client = AcsClient(self.access_id, self.access_secret, self.region_id)
 
@@ -181,8 +188,12 @@ class AliyunRunInstancesExample(object):
         request.set_SystemDiskSize(self.system_disk_size)
         # 系统盘的磁盘种类
         request.set_SystemDiskCategory(self.system_disk_category)
-        # 性能级别
-        request.set_SystemDiskPerformanceLevel(self.system_disk_performance_level)
+
+
+        # 性能级别, 使用 SSD 的时候才可以设置
+        # request.set_SystemDiskPerformanceLevel(self.system_disk_performance_level)
+
+
         # 设置私有 IP 地址
         request.set_PrivateIpAddress(self.private_ip_address)
 
