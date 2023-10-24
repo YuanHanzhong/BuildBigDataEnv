@@ -5,7 +5,6 @@ import os
 import time
 import traceback
 from datetime import datetime, timedelta
-
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerException
 from aliyunsdkecs.request.v20140526.RunInstancesRequest import RunInstancesRequest
