@@ -4,6 +4,7 @@ import json
 import os
 import time
 import traceback
+from datetime import datetime, timedelta
 
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.acs_exception.exceptions import ClientException, ServerException
@@ -14,10 +15,13 @@ RUNNING_STATUS = 'Running'
 CHECK_INTERVAL = 3
 CHECK_TIMEOUT = 180
 
+# 自动释放
+release_time = datetime.utcnow() + timedelta(hours=4)
+
 image_ids = [
-    "m-8vb7chwlnshzet1lrj8k",  # hadoop102
-    "m-8vbbml2roivu0tk2bvba",  # hadoop103
-    "m-8vbhcsz3ukur9frbvd6s"  # hadoop104
+    "m-8vb00hvct8u7i75y2856",  # hadoop102
+    "m-8vbh0v3t5jgxluq0x32i",  # hadoop103
+    "m-8vb6to1o71lzvzc5x6gu"  # hadoop104,
 ]
 
 class AliyunRunInstancesExample(object):
@@ -45,11 +49,16 @@ class AliyunRunInstancesExample(object):
         # 实例所属的地域ID
         self.region_id = 'cn-zhangjiakou'
         # 实例的资源规格
-        self.instance_type = 'ecs.se1ne.large'
+        # ecs.u1-c1m8.large     这个实例的性能高
+        self.instance_type = 'ecs.u1-c1m8.large'
         # 实例的计费方式
         self.instance_charge_type = 'PostPaid'
         # 指定新创建实例所属于的安全组ID
-        self.security_group_id = 'sg-8vbap91nk99v1ypw280a'
+        # self.security_group_id = 'sg-8vbap91nk99v1ypw280a' # 这个比较安全, 没有开 10000端口
+        self.security_group_id = 'sg-8vbj0mxp8vz2qwc5hpy0' # 这个不安全, 打开了所有的大数据常用端口, 容易被挖矿
+
+
+
         # 购买资源的时长
         self.period = 1
         # 购买资源的时长单位
@@ -78,13 +87,13 @@ class AliyunRunInstancesExample(object):
         # cloud_efficiency      高效云盘
         # cloud_essd            弹性 ssd
         # cloud_ssd             普通 ssd
-        self.system_disk_category = 'cloud_ssd'
+        self.system_disk_category = 'cloud_essd'
 
         # 性能级别,
         # 1. 使用 ESSD 的时候才可以选择,
         # 2. 并还需要把下面相关设置打开
         # 3. 选择这个的时候, 实例常常被自动释放, 改用普通 ssd
-        # self.system_disk_performance_level = 'PL0'
+        self.system_disk_performance_level = 'PL1'
 
         self.client = AcsClient(self.access_id, self.access_secret, self.region_id)
 
@@ -149,6 +158,9 @@ class AliyunRunInstancesExample(object):
         """
         request = RunInstancesRequest()
 
+        # 设置自动释放时间
+        request.set_AutoReleaseTime(release_time.strftime('%Y-%m-%dT%H:%M:%SZ'))
+
         # 是否只预检此次请求。true：发送检查请求，不会创建实例，也不会产生费用；false：发送正常请求，通过检查后直接创建实例，并直接产生费用
         request.set_DryRun(self.dry_run)
 
@@ -184,14 +196,19 @@ class AliyunRunInstancesExample(object):
         request.set_IoOptimized(self.io_optimized)
         # 后付费实例的抢占策略
         request.set_SpotStrategy(self.spot_strategy)
+
+
         # 系统盘大小
+        if self.image_to_instance_name_map[self.image_id] == "hadoop102":
+            self.system_disk_size = '50'
+
         request.set_SystemDiskSize(self.system_disk_size)
         # 系统盘的磁盘种类
         request.set_SystemDiskCategory(self.system_disk_category)
 
 
         # 性能级别, 使用 SSD 的时候才可以设置
-        # request.set_SystemDiskPerformanceLevel(self.system_disk_performance_level)
+        request.set_SystemDiskPerformanceLevel(self.system_disk_performance_level)
 
 
         # 设置私有 IP 地址
